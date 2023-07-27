@@ -4,34 +4,36 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-RUN apt-get update
-RUN echo y | apt-get install locales
-RUN echo y | apt install build-essential
-RUN apt -qq install -y --no-install-recommends \
+# Install required system packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    locales \
+    build-essential \
     curl \
     git \
     gnupg2 \
-    wget
+    wget \
+    busybox \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-lxml \
+    pv \
+    && apt-get autoclean \
+    && apt-get autoremove \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN set -ex; \
-    apt-get update \
-    && apt-get install -y --no-install-recommends \
-        busybox \
-	git \
-	python3 \
-	python3-dev \
-	python3-pip \
-	python3-lxml \
-	pv \
-	&& apt-get autoclean \
-        && apt-get autoremove \
-        && rm -rf /var/lib/apt/lists/*
+# Set the locale to avoid locale related issues
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
 
-RUN pip3 install setuptools wheel yarl multidict
+# Install Python packages
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt
-RUN dpkg-reconfigure locales
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy the application code
 COPY . /app
 
 CMD ["python3", "bot.py"]
-
